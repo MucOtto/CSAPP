@@ -143,7 +143,7 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  return ~((~x)&(~y)) & ~(x&y);
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -152,8 +152,8 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-
-  return 2;
+  
+  return 1<<31;
 
 }
 //2
@@ -165,7 +165,7 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  return (!((~(x+1))^x)) & (!!((x+1) ^ 0x0));
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -176,9 +176,13 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  int A = 0xA;  // 四位
+  int AA = A | (A << 4); // 八位
+  int AAAA = AA | (AA << 8); // 十六位
+  int temp = AAAA | (AAAA << 16);
+  return !((x & temp) ^ temp);
 }
-/* 
+/*    
  * negate - return -x 
  *   Example: negate(1) = -1.
  *   Legal ops: ! ~ & ^ | + << >>
@@ -186,7 +190,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x+1;
 }
 //3
 /* 
@@ -199,7 +203,10 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+  int t1 = x >> 6;
+  int t2 = x >> 4;
+  int t3 = (x & 0xF) - 0xA;
+  return (!(!!t1)) && (!(t2 ^ 0b11)) && (t3 >> 31);
 }
 /* 
  * conditional - same as x ? y : z 
@@ -209,7 +216,8 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  int mask = ((!!x) << 31) >> 31;
+  return (mask & y) | (~mask & z);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -219,7 +227,19 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+  // x == y
+  int cond1 = !(x^y);
+
+  int signX = x >> 31;
+  int signY = y >> 31;
+
+  // x+ y-
+  int cond2 = !((!signX) & signY);
+  // x- y+
+  int cond3 = signX & (!signY);
+  // xy同号
+  int res = (x+(~y)+1) >> 31;
+  return cond1 || (cond2 && (cond3 || res));
 }
 //4
 /* 
@@ -231,7 +251,9 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  int negX = ~x + 1;
+  int signX = (x | negX) >> 31;
+  return signX + 1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -246,7 +268,27 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  // 先判断0
+  int isZero = !x;
+  // 对x不管正负进行统一处理 这时候负数的判断也转变为了和正数一样
+  int flag = x >> 31;
+  int mask = ((!!x)<<31)>>31;
+  x = ((~flag) & x) | (flag & (~x));
+  int bits_16,bits_8,bits_4,bits_2,bits_1,bits_0;
+  bits_16 = (!((!!(x >> 16)) ^ 0b1)) << 4;
+  x >>= bits_16; 
+  bits_8 = (!((!!(x >> 8)) ^ 0b1)) << 3;
+  x >>= bits_8; 
+  bits_4 = (!((!!(x >> 4)) ^ 0b1)) << 2;
+  x >>= bits_4; 
+  bits_2 = (!((!!(x >> 2)) ^ 0b1)) << 1;
+  x >>= bits_2; 
+  bits_1 = (!((!!(x >> 1)) ^ 0b1));
+  x >>= bits_1; 
+  bits_0 = x;
+  // 加的1 为符号位
+  int res = bits_16 + bits_8 + bits_4 + bits_2 +bits_1 + bits_0 + 1;
+  return isZero | (mask & res);
 }
 //float
 /* 
