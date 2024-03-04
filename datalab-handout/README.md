@@ -256,3 +256,119 @@ int howManyBits(int x) {
 不难发现例如 1101 和 101代表的数值都是-3。所以负数是要找最高位的0加上符号位。
 <hr>
 由此，每次按照一半进行划分，如果在高半找到了最高位的1，那么就可以不用管低半。
+
+## 4.3 floatScale2
+```c
+//float
+/* 
+ * floatScale2 - Return bit-level equivalent of expression 2*f for
+ *   floating point argument f.
+ *   Both the argument and result are passed as unsigned int's, but
+ *   they are to be interpreted as the bit-level representation of
+ *   single-precision floating point values.
+ *   When argument is NaN, return argument
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
+ *   Max ops: 30
+ *   Rating: 4
+ */
+unsigned floatScale2(unsigned uf) {
+  // 符号位
+  unsigned s = (uf >> 31) & 0b1;
+  // 阶码
+  unsigned expr = (uf >> 23) & 0xFF;
+  // 尾数
+  unsigned frac = uf & 0x7FFFFF;
+  // 0
+  if( expr == 0 && frac == 0){
+    return uf;
+  }
+  // NaN and infinity
+  if(!(expr ^ 0xFF)){
+    return uf;
+  }
+  // denormalize
+  if( expr == 0){
+    // 乘2操作
+    frac <<= 1;
+    return (s << 31) | frac;
+  }
+  // normalize
+  expr ++;
+  return (s << 31) | (expr << 23) | frac;
+}
+```
+题意表示将传入的参数uf变为原来的两倍，当参数是not a number的情况下直接返回参数。
+清楚ieee规则下的浮点数构成，按照四种情况分类讨论即可。
+### 明晰背景知识
+$$
+	V = (-1) ^ s * M * 2^E
+$$
+
+![alt text](image.png)
+对于ieee定制的浮点数的表示。理解*normalize*、*denormalize*、*infinity*、NaN。
+### expr ++的解释
+>Normalize: E = expr - bias (127 single-precision)
+>Denormalize: E = 1 - bias (127 single-precision)
+所以对于规格化下的E计算expr++，相当于E++，那么2^E等于乘了2。
+
+## 4.4 floatFloat2Int
+```c
+/* 
+ * floatFloat2Int - Return bit-level equivalent of expression (int) f
+ *   for floating point argument f.
+ *   Argument is passed as unsigned int, but
+ *   it is to be interpreted as the bit-level representation of a
+ *   single-precision floating point value.
+ *   Anything out of range (including NaN and infinity) should return
+ *   0x80000000u.
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
+ *   Max ops: 30
+ *   Rating: 4
+ */
+int floatFloat2Int(unsigned uf) {
+  // 符号位
+  unsigned s = (uf >> 31) & 0b1;
+  // 阶码
+  unsigned expr = (uf >> 23) & 0xFF;
+  // 尾数
+  unsigned frac = uf & 0x7FFFFF;
+
+  // 0
+  if( expr == 0 && frac == 0)
+    return 0;
+  // out of range(NaN and infinity)
+  if( expr == 0xFF)
+    return 1 << 31;
+  // denormalize
+  if( expr == 0){
+    return 0;
+  }
+  // normalize
+  int E = expr - 127;
+  frac = frac | (1<<23);
+  if( E > 31)
+    return 1 << 31;
+  if ( E < 0)
+    return 0;
+  if( E >= 23 )
+    frac <<= (E - 23);
+  else
+    frac >>= (23 - E); 
+  if(s)
+    return (~frac) + 1;
+  return frac;
+}
+```
+题意是把传入的浮点数变成整数并且返回。因为可以看到返回值类型是int，所以最后要根据s判断返回的正负。
+### 非规格化的情况
+E = 1 - 127（单精度） M < 1 2^E => 0 所以返回0
+### 规格化的情况
+E = expr - 127 分情况讨论：
+(1) E非常大 E > 31位 按照infinity情况处理
+(2) E非常小 小于0 2^E => 0 直接返回0
+(3) E合适 这时跟 23进行比较(frac的位数)
+    (1) E > 23 相当于把frac的小数部分左移 多余部分还要添零
+    (2) E < 23 小数部分左移了一部分 但是还不够
+### 疑惑点
+对于规格化计算的M前面自带的1，为何在计算中不用显示地加上呢？
+
