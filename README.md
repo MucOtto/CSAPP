@@ -1,3 +1,8 @@
 # CSAPP
 
-![image](https://github.com/MucOtto/CSAPP/assets/122969909/6c676752-e350-4235-a7c8-c1de46ea600d)
+<center>![image](https://github.com/MucOtto/CSAPP/assets/122969909/6c676752-e350-4235-a7c8-c1de46ea600d)</center>
+
+## 写在前面
+作为一个985CS科班的学生，我经常会思考读研与就业的问题。焦虑好象一颗**bomb**时不时在夜晚迸发，被刷的铺天盖的培训班的视频影响自己的判断。在盲目中，下定决心学习java。spring全家桶，redis，mq，微服务等等一些列技术栈开始涌入一个大二的知识库中。又因为大创的缘故，开始学习vue，js，promise和异步axios，我开始萌生了**全栈**的想法。
+> 可是有一天我不禁问道自己，这样的我与培训班学生有什么区别呢？
+我重新捡起了自大一开始每次看到一部分又弃坑的csdiy，用心研读，修炼cs内功。
